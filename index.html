@@ -27,6 +27,23 @@
     <button onclick="adminLogout()">Logout</button>
 
     <div class="section">
+      <h3>Add Driver</h3>
+      <input type="text" id="newDriverId" placeholder="Driver ID" />
+      <input type="password" id="newDriverPass" placeholder="Password" />
+      <input type="text" id="newDriverRoute" placeholder="Route (e.g. buses/bus1)" />
+      <button onclick="createDriver()">Add Driver</button>
+      <p id="driverMsg"></p>
+    </div>
+
+    <div class="section">
+      <h3>Add Student</h3>
+      <input type="text" id="newStudentId" placeholder="Student ID" />
+      <input type="password" id="newStudentPass" placeholder="Password" />
+      <button onclick="createStudent()">Add Student</button>
+      <p id="studentMsg"></p>
+    </div>
+
+    <div class="section">
       <h3>Drivers List</h3>
       <table id="driversTable">
         <thead>
@@ -119,6 +136,43 @@
           alert("Deleted from database. Please delete from Firebase Auth manually if needed.");
           loadUsers();
         });
+    }
+
+    function createDriver() {
+      const id = document.getElementById("newDriverId").value.trim();
+      const pass = document.getElementById("newDriverPass").value.trim();
+      const route = document.getElementById("newDriverRoute").value.trim();
+
+      if (!id || !pass || !route) return alert("Fill all driver fields");
+
+      const email = id + "@busapp.com";
+      auth.createUserWithEmailAndPassword(email, pass)
+        .then(() => {
+          db.ref("drivers/" + id).set({ route });
+          alert("Driver added");
+          document.getElementById("newDriverId").value = "";
+          document.getElementById("newDriverPass").value = "";
+          document.getElementById("newDriverRoute").value = "";
+          loadUsers();
+        })
+        .catch(err => alert(err.message));
+    }
+
+    function createStudent() {
+      const id = document.getElementById("newStudentId").value.trim();
+      const pass = document.getElementById("newStudentPass").value.trim();
+      if (!id || !pass) return alert("Fill student ID and password");
+
+      const email = id + "@studentapp.com";
+      auth.createUserWithEmailAndPassword(email, pass)
+        .then(() => {
+          db.ref("students/" + id).set({ createdAt: Date.now() });
+          alert("Student added");
+          document.getElementById("newStudentId").value = "";
+          document.getElementById("newStudentPass").value = "";
+          loadUsers();
+        })
+        .catch(err => alert(err.message));
     }
   </script>
 </body>
