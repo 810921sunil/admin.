@@ -5,71 +5,53 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; background-color: #f9f9f9; }
-    input, select, button { padding: 10px; margin: 5px 0; width: 100%; font-size: 16px; }
+    input, button { padding: 10px; margin: 5px 0; width: 100%; font-size: 16px; }
     h2 { text-align: center; }
-    #logoutBtn { margin-top: 20px; }
     .section { border: 1px solid #ccc; padding: 15px; margin: 20px 0; border-radius: 8px; background: #fff; }
-    .error { color: red; }
-    .success { color: green; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    .action-btn { padding: 5px 10px; margin: 2px; }
+    .btn-small { padding: 5px 10px; }
   </style>
 </head>
 <body>
-  <h2>🔧 Admin Panel</h2>
+  <h2>Admin Panel</h2>
 
-  <div id="loginBox">
+  <div>
     <input type="email" id="adminEmail" placeholder="Admin Email" />
     <input type="password" id="adminPass" placeholder="Admin Password" />
     <button onclick="adminLogin()">Login</button>
-    <p id="loginError" class="error"></p>
+    <p id="loginError" style="color:red;"></p>
   </div>
 
   <div id="adminPanel" style="display:none;">
-    <button id="logoutBtn" onclick="adminLogout()">Logout</button>
+    <button onclick="adminLogout()">Logout</button>
 
     <div class="section">
-      <h3>➕ Add Driver</h3>
-      <input type="text" id="driverId" placeholder="Driver ID" />
-      <input type="password" id="driverPass" placeholder="Password" />
-      <input type="text" id="driverRoute" placeholder="Route (e.g. buses/bus1)" />
-      <button onclick="addDriver()">Add Driver</button>
-      <p id="driverMsg"></p>
-    </div>
-
-    <div class="section">
-      <h3>➕ Add Student</h3>
-      <input type="text" id="studentId" placeholder="Student ID" />
-      <input type="password" id="studentPass" placeholder="Password" />
-      <button onclick="addStudent()">Add Student</button>
-      <p id="studentMsg"></p>
-    </div>
-
-    <div class="section">
-      <h3>🧑‍✈️ Drivers List</h3>
+      <h3>Drivers List</h3>
       <table id="driversTable">
-        <thead><tr><th>ID</th><th>Route</th><th>Change Password</th><th>Delete</th></tr></thead>
+        <thead>
+          <tr><th>Driver ID</th><th>Route</th><th>Action</th></tr>
+        </thead>
         <tbody></tbody>
       </table>
     </div>
 
     <div class="section">
-      <h3>🎓 Students List</h3>
+      <h3>Students List</h3>
       <table id="studentsTable">
-        <thead><tr><th>ID</th><th>Change Password</th><th>Delete</th></tr></thead>
+        <thead>
+          <tr><th>Student ID</th><th>Action</th></tr>
+        </thead>
         <tbody></tbody>
       </table>
     </div>
   </div>
 
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
   <script>
-    // ✅ Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyA01RW_-AK7DzZp9sd92GDZpExIVvMVbBY",
       authDomain: "ringasbustracker.firebaseapp.com",
@@ -90,121 +72,53 @@
 
       auth.signInWithEmailAndPassword(email, password)
         .then(() => {
-          document.getElementById("loginBox").style.display = "none";
           document.getElementById("adminPanel").style.display = "block";
-          loadDrivers();
-          loadStudents();
+          loadUsers();
         })
-        .catch(error => {
-          document.getElementById("loginError").innerText = error.message;
+        .catch(err => {
+          document.getElementById("loginError").innerText = err.message;
         });
     }
 
     function adminLogout() {
-      auth.signOut().then(() => {
-        location.reload();
-      });
+      auth.signOut().then(() => location.reload());
     }
 
-    function addDriver() {
-      const id = document.getElementById("driverId").value.trim();
-      const pass = document.getElementById("driverPass").value.trim();
-      const route = document.getElementById("driverRoute").value.trim();
-      const email = id + "@busapp.com";
+    function loadUsers() {
+      const driversTable = document.querySelector("#driversTable tbody");
+      const studentsTable = document.querySelector("#studentsTable tbody");
+      driversTable.innerHTML = "";
+      studentsTable.innerHTML = "";
 
-      if (!id || !pass || !route) {
-        document.getElementById("driverMsg").innerText = "सभी फ़ील्ड भरें";
-        return;
-      }
-
-      auth.createUserWithEmailAndPassword(email, pass)
-        .then(() => {
-          return db.ref("drivers/" + id).set({ route: route });
-        })
-        .then(() => {
-          document.getElementById("driverMsg").innerText = "Driver Added!";
-          document.getElementById("driverId").value = "";
-          document.getElementById("driverPass").value = "";
-          document.getElementById("driverRoute").value = "";
-          loadDrivers();
-        })
-        .catch(error => {
-          document.getElementById("driverMsg").innerText = error.message;
-        });
-    }
-
-    function addStudent() {
-      const id = document.getElementById("studentId").value.trim();
-      const pass = document.getElementById("studentPass").value.trim();
-      const email = id + "@studentapp.com";
-
-      if (!id || !pass) {
-        document.getElementById("studentMsg").innerText = "सभी फ़ील्ड भरें";
-        return;
-      }
-
-      auth.createUserWithEmailAndPassword(email, pass)
-        .then(() => {
-          return db.ref("students/" + id).set({ createdAt: Date.now() });
-        })
-        .then(() => {
-          document.getElementById("studentMsg").innerText = "Student Added!";
-          document.getElementById("studentId").value = "";
-          document.getElementById("studentPass").value = "";
-          loadStudents();
-        })
-        .catch(error => {
-          document.getElementById("studentMsg").innerText = error.message;
-        });
-    }
-
-    function loadDrivers() {
-      const table = document.querySelector("#driversTable tbody");
-      table.innerHTML = "";
       db.ref("drivers").once("value", snapshot => {
         const data = snapshot.val();
         for (let id in data) {
-          const route = data[id].route;
-          table.innerHTML += `
-            <tr>
-              <td>${id}</td>
-              <td>${route}</td>
-              <td><button class="action-btn" onclick="resetPassword('${id}@busapp.com')">Reset Password</button></td>
-              <td><button class="action-btn" onclick="deleteUser('drivers','${id}','${id}@busapp.com')">Delete</button></td>
-            </tr>`;
+          driversTable.innerHTML += `<tr>
+            <td>${id}</td>
+            <td>${data[id].route}</td>
+            <td><button class='btn-small' onclick="deleteUser('drivers','${id}')">Delete</button></td>
+          </tr>`;
         }
       });
-    }
 
-    function loadStudents() {
-      const table = document.querySelector("#studentsTable tbody");
-      table.innerHTML = "";
       db.ref("students").once("value", snapshot => {
         const data = snapshot.val();
         for (let id in data) {
-          table.innerHTML += `
-            <tr>
-              <td>${id}</td>
-              <td><button class="action-btn" onclick="resetPassword('${id}@studentapp.com')">Reset Password</button></td>
-              <td><button class="action-btn" onclick="deleteUser('students','${id}','${id}@studentapp.com')">Delete</button></td>
-            </tr>`;
+          studentsTable.innerHTML += `<tr>
+            <td>${id}</td>
+            <td><button class='btn-small' onclick="deleteUser('students','${id}')">Delete</button></td>
+          </tr>`;
         }
       });
     }
 
-    function resetPassword(email) {
-      firebase.auth().sendPasswordResetEmail(email)
-        .then(() => alert("Reset link sent to " + email))
-        .catch(err => alert(err.message));
-    }
-
-    function deleteUser(type, id, email) {
-      if (!confirm("Confirm delete for: " + id)) return;
-      db.ref(type + "/" + id).remove().then(() => {
-        alert("Deleted from database. Now delete user manually from Firebase Auth Console.");
-        if (type === "drivers") loadDrivers();
-        else loadStudents();
-      });
+    function deleteUser(role, id) {
+      if (!confirm(`Are you sure to delete ${role.slice(0,-1)}: ${id}?`)) return;
+      db.ref(`${role}/${id}`).remove()
+        .then(() => {
+          alert("Deleted from database. Please delete from Firebase Auth manually if needed.");
+          loadUsers();
+        });
     }
   </script>
 </body>
