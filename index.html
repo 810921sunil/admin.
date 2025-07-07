@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Panel - Manage Drivers & Students</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    input, select, button { padding: 10px; margin: 5px 0; width: 100%; font-size: 16px; }
+    h2 { text-align: center; }
+    #logoutBtn { margin-top: 20px; }
+    .section { border: 1px solid #ccc; padding: 15px; margin: 20px 0; border-radius: 8px; background: #f9f9f9;}
+    .error { color: red; }
+    .success { color: green; }
+  </style>
+</head>
+<body>
+  <h2>🔧 Admin Panel</h2>
+
+  <div id="loginBox">
+    <input type="email" id="adminEmail" placeholder="Admin Email" />
+    <input type="password" id="adminPass" placeholder="Admin Password" />
+    <button onclick="adminLogin()">Login</button>
+    <p id="loginError" class="error"></p>
+  </div>
+
+  <div id="adminPanel" style="display:none;">
+    <button id="logoutBtn" onclick="adminLogout()">Logout</button>
+
+    <div class="section">
+      <h3>➕ Add Driver</h3>
+      <input type="text" id="driverId" placeholder="Driver ID (numbers only)" />
+      <input type="password" id="driverPass" placeholder="Driver Password" />
+      <input type="text" id="driverRoute" placeholder="Bus Route (e.g. buses/bus1)" />
+      <button onclick="addDriver()">Add Driver</button>
+      <p id="driverMsg"></p>
+    </div>
+
+    <div class="section">
+      <h3>➕ Add Student</h3>
+      <input type="text" id="studentId" placeholder="Student ID (numbers only)" />
+      <input type="password" id="studentPass" placeholder="Student Password" />
+      <button onclick="addStudent()">Add Student</button>
+      <p id="studentMsg"></p>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+  <script>
+    // ✅ Firebase Configuration (Admin में यह जोड़ा गया है)
+    const firebaseConfig = {
+      apiKey: "AIzaSyA01RW_-AK7DzZp9sd92GDZpExIVvMVbBY",
+      authDomain: "ringasbustracker.firebaseapp.com",
+      databaseURL: "https://ringasbustracker-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "ringasbustracker",
+      storageBucket: "ringasbustracker.firebasestorage.app",
+      messagingSenderId: "894338476193",
+      appId: "1:894338476193:web:125d89e35d8ada1822a8e0"
+    };
+
+    // ✅ Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    function adminLogin() {
+      const email = document.getElementById("adminEmail").value.trim();
+      const password = document.getElementById("adminPass").value.trim();
+
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          document.getElementById("loginBox").style.display = "none";
+          document.getElementById("adminPanel").style.display = "block";
+          clearMessages();
+        })
+        .catch(error => {
+          document.getElementById("loginError").innerText = error.message;
+        });
+    }
+
+    function adminLogout() {
+      auth.signOut().then(() => {
+        document.getElementById("adminPanel").style.display = "none";
+        document.getElementById("loginBox").style.display = "block";
+        clearMessages();
+        document.getElementById("adminEmail").value = "";
+        document.getElementById("adminPass").value = "";
+      });
+    }
+
+    function clearMessages() {
+      document.getElementById("driverMsg").innerText = "";
+      document.getElementById("studentMsg").innerText = "";
+      document.getElementById("loginError").innerText = "";
+    }
+
+    function addDriver() {
+      clearMessages();
+      const driverId = document.getElementById("driverId").value.trim();
+      const driverPass = document.getElementById("driverPass").value.trim();
+      const driverRoute = document.getElementById("driverRoute").value.trim();
+
+      if (!driverId || !driverPass || !driverRoute) {
+        document.getElementById("driverMsg").innerText = "सभी फ़ील्ड भरें";
+        return;
+      }
+
+      const email = driverId + "@busapp.com";
+
+      auth.createUserWithEmailAndPassword(email, driverPass)
+        .then(() => {
+          db.ref("drivers/" + driverId).set({
+            route: driverRoute
+          });
+          document.getElementById("driverMsg").style.color = "green";
+          document.getElementById("driverMsg").innerText = "Driver successfully added!";
+          document.getElementById("driverId").value = "";
+          document.getElementById("driverPass").value = "";
+          document.getElementById("driverRoute").value = "";
+        })
+        .catch(error => {
+          document.getElementById("driverMsg").style.color = "red";
+          document.getElementById("driverMsg").innerText = error.message;
+        });
+    }
+
+    function addStudent() {
+      clearMessages();
+      const studentId = document.getElementById("studentId").value.trim();
+      const studentPass = document.getElementById("studentPass").value.trim();
+
+      if (!studentId || !studentPass) {
+        document.getElementById("studentMsg").innerText = "सभी फ़ील्ड भरें";
+        return;
+      }
+
+      const email = studentId + "@studentapp.com";
+
+      auth.createUserWithEmailAndPassword(email, studentPass)
+        .then(() => {
+          db.ref("students/" + studentId).set({
+            createdAt: Date.now()
+          });
+          document.getElementById("studentMsg").style.color = "green";
+          document.getElementById("studentMsg").innerText = "Student successfully added!";
+          document.getElementById("studentId").value = "";
+          document.getElementById("studentPass").value = "";
+        })
+        .catch(error => {
+          document.getElementById("studentMsg").style.color = "red";
+          document.getElementById("studentMsg").innerText = error.message;
+        });
+    }
+  </script>
+</body>
+</html>
